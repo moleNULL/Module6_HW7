@@ -1,13 +1,9 @@
-using System.Reflection;
-using Basket.Host.Configurations;
-using Basket.Host.Services;
-using Basket.Host.Services.Interfaces;
-using EasyNetQ.AutoSubscribe;
 using Infrastructure.Extensions;
 using Infrastructure.Filters;
-using Infrastructure.MessageBus;
 using Microsoft.OpenApi.Models;
 using Order.Host.Configurations;
+using Order.Host.Services;
+using Order.Host.Services.Interfaces;
 
 var configuration = GetConfiguration();
 
@@ -23,9 +19,9 @@ builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "eShop - Basket HTTP API",
+        Title = "eShop - Order HTTP API",
         Version = "v1",
-        Description = "The Basket Service HTTP API"
+        Description = "The Order Service HTTP API"
     });
 
     var authority = configuration["Authorization:Authority"];
@@ -50,19 +46,17 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 builder.AddConfiguration();
-builder.Services.Configure<RedisConfig>(
-    builder.Configuration.GetSection("Redis"));
 builder.Services.Configure<RabbitMQConfig>(
     builder.Configuration.GetSection("RabbitMQ"));
 
-builder.Services.AddSingleton(RabbitHutch.CreateBus(configuration["RabbitMQ:ConnectionString"]));
+var rabbitHost = configuration["RabbitMQ:ConnectionString"];
+
+builder.Services.AddSingleton(RabbitHutch.CreateBus(rabbitHost));
 
 builder.Services.AddAuthorization(configuration);
 
 builder.Services.AddTransient<IJsonSerializer, Infrastructure.Services.JsonSerializer>();
-builder.Services.AddTransient<IRedisCacheConnectionService, RedisCacheConnectionService>();
-builder.Services.AddTransient<ICacheService, CacheService>();
-builder.Services.AddTransient<IBasketService, BasketService>();
+builder.Services.AddTransient<IOrderService, OrderService>();
 
 builder.Services.AddCors(options =>
 {
@@ -80,9 +74,9 @@ var app = builder.Build();
 app.UseSwagger()
     .UseSwaggerUI(setup =>
     {
-        setup.SwaggerEndpoint($"{configuration["PathBase"]}/swagger/v1/swagger.json", "Basket.API V1");
-        setup.OAuthClientId("basketswaggerui");
-        setup.OAuthAppName("Basket Swagger UI");
+        setup.SwaggerEndpoint($"{configuration["PathBase"]}/swagger/v1/swagger.json", "Order.API V1");
+        setup.OAuthClientId("orderswaggerui");
+        setup.OAuthAppName("Order Swagger UI");
     });
 
 app.UseRouting();
@@ -96,8 +90,6 @@ app.UseEndpoints(endpoints =>
     endpoints.MapDefaultControllerRoute();
     endpoints.MapControllers();
 });
-
-app.UseSubscribe("Basket", Assembly.GetExecutingAssembly());
 
 app.Run();
 

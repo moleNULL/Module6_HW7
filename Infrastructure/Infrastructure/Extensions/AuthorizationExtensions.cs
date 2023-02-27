@@ -22,7 +22,7 @@ public static class AuthorizationExtensions
             {
                 options.Authority = authority;
                 options.RequireHttpsMetadata = false;
-                options.TokenValidationParameters = new TokenValidationParameters
+                options.TokenValidationParameters = new TokenValidationParameters()
                 {
                     ValidateAudience = false
                 };
